@@ -3,29 +3,11 @@ function onOpen() {
   // Or FormApp or SpreadsheetApp.
   ui.createMenu('Custom Journal Menu')
       .addItem('New Entry', 'newEntry')
-      .addItem('Export Changes', 'listFileRevisions')
+      .addItem('Export Journal', 'exportDataModal')
       .addToUi();
 
 }
-function listFileRevisions() {
-  fileID =  DocumentApp.getActiveDocument().getId();
-  var editList = [],
-      revisions = Drive.Revisions.list(fileID);
-  
-  if (revisions.items && revisions.items.length > 0) {
-    Logger.log(revisions.items.length);
-    for (var i=0; i < revisions.items.length; i++) {
-      var revision = revisions.items[i];
-      editList.push([revision.id, (new Date(revision.modifiedDate)).toLocaleString(),
-        revision.lastModifyingUserName, revision.lastModifyingUser.emailAddress
-      ]);
-    }
-    Logger.log(editList);
-  } else {
-    Logger.log('No file revisions found.');
-  }
 
-}
 function insertDate() {
   // Attempt to insert text at the cursor position. If insertion returns null,
   // then the cursor's containing element doesn't allow text insertions.
@@ -50,60 +32,13 @@ function insertDate() {
   par2.setHeading(DocumentApp.ParagraphHeading.NORMAL);
   return_position =  DocumentApp.getActiveDocument().newPosition(par2, 0);
 
-//      var element = pos.insertText(date);
-//      var body = DocumentApp.getActiveDocument().getBody();
-//      var date_style = {};
-//      date_style[DocumentApp.Attribute.HEADING] = DocumentApp.ParagraphHeading.HEADING1;
-//      element.getParent().setAttributes(date_style);
-//      
-//      //adjust for text entry position
-//      var entry_position = DocumentApp.getActiveDocument().newPosition(element, date.length);
-//      var entry_element = entry_position.insertText("\n");
-//      var entry_style = {};
-//      entry_style[DocumentApp.Attribute.HEADING] = DocumentApp.ParagraphHeading.NORMAL;
-//      entry_element.getParent().setAttributes(entry_style);
-//      
-//     
-//      return_position =  DocumentApp.getActiveDocument().newPosition(entry_element, 0);
-//      
-
   return(return_position);
 
 }
-//creates spot for viewing template
-function setTemplateRange(){
- // Create a named range that includes every table in the document.
- var doc = DocumentApp.getActiveDocument();
- var selection = DocumentApp.getActiveDocument().getSelection();
- var rangeBuilder = doc.newRange();
- rangeBuilder.addRange(selection);
- doc.addNamedRange('template', rangeBuilder.build());
-}
-//sets templete contents
-function setTemplate(){
-  var doc = DocumentApp.getActiveDocument();
 
-  var templateNamedRange = doc.getNamedRanges("template");
-  var templateRange = templateNamedRange.getRange();
-  var elements = templateRange.getRangeElements();
-  //replace range or elements idk
-
-}
-//sets range to designate journal end
-function setJournalEnd(){
-  var doc = DocumentApp.getActiveDocument();
-  var selection = DocumentApp.getActiveDocument().getSelection();
-  var rangeBuilder = doc.newRange();
-  rangeBuilder.addRange(selection);
-  doc.addNamedRange('end', rangeBuilder.build());
-}
 //appends new journal template above end position
 function newEntry() {
   var doc = DocumentApp.getActiveDocument();
-//  var templateNamedRange = doc.getNamedRanges("end")[0];
-//  var templateRange = templateNamedRange.getRange();
-//  var elements = templateRange.getRangeElements();
-//  var pos = doc.newPosition(elements[0].getElement(), 0);
   var new_pos = insertDate();
   doc.setCursor(new_pos);
   
@@ -113,19 +48,56 @@ function pad (str, max) {
   return str.length < max ? pad("0" + str, max) : str;
 }
 
-
-/* What should the add-on do when a document is opened */
-function onOpen() {
-  var ss = SpreadsheetApp.getActive();
-  var items = [
-      {name: 'Convert To Text', functionName: 'functionToText'},
-      null, // Results in a line separator.
-      {name: 'Convert To Formula', functionName: 'textToFunction'}
-   ];
-   ss.addMenu('Text Formula Converter', items);
- 
+function exportDataModal() {
+  var html = HtmlService.createHtmlOutputFromFile('download');
+  DocumentApp.getUi().showModalDialog(html, 'Export Journal Data');
 }
+
+
+function exportJournal(){
+
+	var doc = DocumentApp.getActiveDocument();
+	var body = doc.getBody();
+	var paragraphs = body.getParagraphs()
+    var date = "NA"
+    var myExport = []
+    for (var i = 0; i < paragraphs.length; i++) {
+      if(paragraphs[i].getHeading() == "Heading 1")
+      {
+        date = paragraphs[i].getText()
+      }
+      else
+      {
+        myExport.push([date,paragraphs[i].getText()])
+      }
+//      Logger.log(myExport)
+//      Logger.log(paragraphs[i].getHeading());
+//      Logger.log(paragraphs[i].getText());
+    //Do something
+    };
+    
+    var csvContent = "data:text/csv;charset=utf-16,";
+//    var csvContent = ""
+    myExport.forEach(function(rowArray){
+
+     rowArray.forEach(function(part, index, theArray) {
+      theArray[index] =  JSON.stringify(part);
+    });
+     var row = rowArray.join(",");
+     csvContent += row + "\r\n";
+    }); 
+    Logger.log(csvContent)
+    
+   var encodedUri = encodeURI(csvContent);
+   return {
+    url: encodedUri,
+    filename: "myJournal.csv"
+  };
+}
+
+
 /* What should the add-on do after it is installed */
 function onInstall() {
-  onOpen();
+onOpen();
+  //create template
 }
