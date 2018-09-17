@@ -53,6 +53,23 @@ function exportDataModal() {
   DocumentApp.getUi().showModalDialog(html, 'Export Journal Data');
 }
 
+function sanitizeString (desc) {
+    var itemDesc;
+    if(desc){
+      desc = desc.replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/[\u2026]/g, '...');
+    }
+    if (desc) {
+        itemDesc = desc.replace(/(\r\n|\n|\r|\s+|\t|&nbsp;)/gm,' ');
+        itemDesc = itemDesc.replace(/"/g, '""');
+        itemDesc = itemDesc.replace(/ +(?= )/g,'');
+    } else {
+        itemDesc = '';
+    }
+    return itemDesc;
+}
 
 function exportJournal(){
 
@@ -70,24 +87,21 @@ function exportJournal(){
       {
         myExport.push([date,paragraphs[i].getText()])
       }
-//      Logger.log(myExport)
-//      Logger.log(paragraphs[i].getHeading());
-//      Logger.log(paragraphs[i].getText());
     //Do something
     };
     
-    var csvContent = "data:text/csv;charset=utf-16,";
-//    var csvContent = ""
+    var csvContent = "data:text/csv;charset=UTF-8,";
     myExport.forEach(function(rowArray){
 
      rowArray.forEach(function(part, index, theArray) {
-      theArray[index] =  JSON.stringify(part);
+        theArray[index] = '"' + sanitizeString(part) + '"';
+//        theArray[index] = part;
     });
      var row = rowArray.join(",");
      csvContent += row + "\r\n";
     }); 
-    Logger.log(csvContent)
-    
+   Logger.log(csvContent)
+
    var encodedUri = encodeURI(csvContent);
    return {
     url: encodedUri,
