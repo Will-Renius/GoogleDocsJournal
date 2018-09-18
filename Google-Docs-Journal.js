@@ -1,3 +1,8 @@
+/* What should the add-on do after it is installed */
+function onInstall() {
+onOpen();
+}
+
 function onOpen() {
   var ui = DocumentApp.getUi();
   // Or FormApp or SpreadsheetApp.
@@ -9,21 +14,9 @@ function onOpen() {
 }
 
 function insertDate() {
-  // Attempt to insert text at the cursor position. If insertion returns null,
-  // then the cursor's containing element doesn't allow text insertions.
-  var d = new Date();
-  var min = d.getMinutes();
-  min = pad(min, 2);
-  var hr = d.getHours();
-  hr = pad(hr, 2);
-  var dd = d.getDate();
-  dd = pad(dd, 2)
-  var mm = d.getMonth() + 1; //Months are zero based
-  mm = pad(mm, 2)
-  var yyyy = d.getFullYear();
-  var date = mm + "-" + dd + "-" +  yyyy + " " + hr + ":" + min;
+   
   var body = DocumentApp.getActiveDocument().getBody();
-  
+  var date = getDateString();
   // Append a paragraph, with heading 1.
   var par1 = body.appendParagraph(date);
   par1.setHeading(DocumentApp.ParagraphHeading.HEADING1);
@@ -43,6 +36,23 @@ function newEntry() {
   doc.setCursor(new_pos);
   
 }
+
+function getDateString () {
+  var d = new Date();
+  var min = d.getMinutes();
+  min = pad(min, 2);
+  var hr = d.getHours();
+  hr = pad(hr, 2);
+  var dd = d.getDate();
+  dd = pad(dd, 2)
+  var mm = d.getMonth() + 1; //Months are zero based
+  mm = pad(mm, 2)
+  var yyyy = d.getFullYear();
+  var date = mm + "-" + dd + "-" +  yyyy + " " + hr + ":" + min;
+  
+  return(date);
+}
+
 function pad (str, max) {
   str = str.toString();
   return str.length < max ? pad("0" + str, max) : str;
@@ -87,7 +97,6 @@ function exportJournal(){
       {
         myExport.push([date,paragraphs[i].getText()])
       }
-    //Do something
     };
     
     var csvContent = "data:text/csv;charset=UTF-8,";
@@ -95,12 +104,11 @@ function exportJournal(){
 
      rowArray.forEach(function(part, index, theArray) {
         theArray[index] = '"' + sanitizeString(part) + '"';
-//        theArray[index] = part;
     });
      var row = rowArray.join(",");
      csvContent += row + "\r\n";
     }); 
-   Logger.log(csvContent)
+//   Logger.log(csvContent)
 
    var encodedUri = encodeURI(csvContent);
    return {
@@ -110,8 +118,3 @@ function exportJournal(){
 }
 
 
-/* What should the add-on do after it is installed */
-function onInstall() {
-onOpen();
-  //create template
-}
